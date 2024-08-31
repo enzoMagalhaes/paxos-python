@@ -1,19 +1,24 @@
 import socket
 import threading
 import json
-import time
 
 from base.proposer import Proposer, ProposalID
 from base.acceptor import Acceptor
 from base.learner import Learner
 
-class Messenger:
-    def __init__(self, uid, port, neighbors):
+class Node(Proposer, Acceptor, Learner):
+    """
+    Implements a paxos node with a socket interface
+    """
+    def __init__(self, uid, port, neighbors, quorum_size=2):
         self.proposer_uid = uid
         self.port = port
         self.neighbors = neighbors  # A map of UID to (IP, port)
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(("localhost", port))
+        self.messenger = self
+        self.quorum_size = quorum_size  
+        threading.Thread(target=self.receive_messages).start()
 
     def send_message(self, target_uid, message_type, data):
         message = {
@@ -75,20 +80,3 @@ class Messenger:
 
     def on_resolution(self, proposal_id, value):
         print(f"Node {self.proposer_uid} learned value: {value}")
-
-class Node(Messenger, Proposer, Acceptor, Learner):
-    def __init__(self, uid, port, neighbors, quorum_size=2):
-        Messenger.__init__(self, uid, port, neighbors)
-        self.quorum_size = quorum_size  
-        self.messenger = self
-
-        threading.Thread(target=self.receive_messages).start()
-
-# Set up nodes with their ports and neighbors
-node1 = Node(1, 10001, {2: ('localhost', 10002), 3: ('localhost', 10003)})
-node2 = Node(2, 10002, {1: ('localhost', 10001), 3: ('localhost', 10003)})
-node3 = Node(3, 10003, {1: ('localhost', 10001), 2: ('localhost', 10002)})
-
-time.sleep(1)
-node1.set_proposal("Value A")
-node1.prepare()

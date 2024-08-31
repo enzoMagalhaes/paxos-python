@@ -1,6 +1,6 @@
 class Acceptor(object):
 
-    messenger = None
+    # messenger = None
     promised_id = None
     accepted_id = None
     accepted_value = None
@@ -9,7 +9,7 @@ class Acceptor(object):
         """
         Called when a Prepare message is received from a Proposer
         """
-        if proposal_id == self.promised_id:
+        if not self.promised_id or proposal_id == self.promised_id:
             # Duplicate prepare message
             self.messenger.send_promise(
                 from_uid, proposal_id, self.accepted_id, self.accepted_value
@@ -25,7 +25,7 @@ class Acceptor(object):
         """
         Called when an Accept! message is received from a Proposer
         """
-        if proposal_id >= self.promised_id:
+        if not self.promised_id or proposal_id >= self.promised_id:
             self.promised_id = proposal_id
             self.accepted_id = proposal_id
             self.accepted_value = value

@@ -5,9 +5,9 @@ ProposalID = collections.namedtuple("ProposalID", ["number", "uid"])
 
 class Proposer(object):
 
-    messenger = None
-    proposer_uid = None
-    quorum_size = None
+    # messenger = None
+    # proposer_uid = None
+    # quorum_size = None
 
     proposed_value = None
     proposal_id = None
@@ -49,7 +49,7 @@ class Proposer(object):
 
         self.promises_rcvd.add(from_uid)
 
-        if prev_accepted_id > self.last_accepted_id:
+        if prev_accepted_id and prev_accepted_id > self.last_accepted_id:
             self.last_accepted_id = prev_accepted_id
             # If the Acceptor has already accepted a value, we MUST set our proposal
             # to that value.

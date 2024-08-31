@@ -1,6 +1,6 @@
 class Learner(object):
 
-    quorum_size = None
+    # quorum_size = None
 
     proposals = None  # maps proposal_id => [accept_count, retain_count, value]
     acceptors = None  # maps from_uid => last_accepted_proposal_id
@@ -24,7 +24,7 @@ class Learner(object):
 
         last_pn = self.acceptors.get(from_uid)
 
-        if not proposal_id > last_pn:
+        if last_pn and (not proposal_id > last_pn):
             return  # Old message
 
         self.acceptors[from_uid] = proposal_id

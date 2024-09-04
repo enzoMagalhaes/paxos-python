@@ -83,9 +83,9 @@ Cada nó é criado com um identificador único, uma porta, e uma lista de vizinh
 ```python
 from node import Node
 
-node1 = Node(1, 10001, {2: ('localhost', 10002), 3: ('localhost', 10003)})
-node2 = Node(2, 10002, {1: ('localhost', 10001), 3: ('localhost', 10003)})
-node3 = Node(3, 10003, {1: ('localhost', 10001), 2: ('localhost', 10002)})
+node1 = Node(1, 10001, {2: ('localhost', 10002), 3: ('localhost', 10003)},quorum_size=2)
+node2 = Node(2, 10002, {1: ('localhost', 10001), 3: ('localhost', 10003)},quorum_size=2)
+node3 = Node(3, 10003, {1: ('localhost', 10001), 2: ('localhost', 10002)},quorum_size=2)
 
 node1.set_proposal("Value A")
 node1.prepare()

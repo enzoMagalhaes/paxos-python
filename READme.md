@@ -1,6 +1,6 @@
 # Paxos Algorithm Implementation
 
-Este projeto implementa um nó Paxos com comunicação por sockets. O algoritmo Paxos é utilizado para alcançar consenso em sistemas distribuídos. Cada nó pode atuar como um Proposer, Acceptor e Learner, comunicando-se com outros nós via sockets UDP.
+Este projeto implementa um nó Paxos com comunicação por sockets. O algoritmo Paxos é utilizado para alcançar consenso em sistemas distribuídos. Cada nó pode atuar como um **Proposer**, **Acceptor** e **Learner**, comunicando-se com outros nós via sockets UDP.
 
 ## Estrutura do Projeto
 
@@ -10,16 +10,34 @@ O projeto é composto por três componentes principais, herdados pela classe `No
 - **Acceptor**: Recebe e aceita propostas de consenso.
 - **Learner**: Aprende o valor que foi aceito pela maioria dos Acceptors.
 
+### Justificativa das Escolhas de Projeto
+
+- **Uso de sockets**: A comunicação entre os nós ocorre de forma assíncrona via UDP sockets, o que reflete a natureza assíncrona de sistemas distribuídos reais. O UDP foi escolhido pela sua simplicidade e eficiência, uma vez que o Paxos é resiliente a perdas de mensagens.
+- **Estrutura do Nó**: A classe `Node` herda as funções de Proposer, Acceptor e Learner para centralizar a lógica do Paxos em uma única entidade, facilitando a manutenção e escalabilidade do código. No entanto, isso requer um gerenciamento cuidadoso dos estados.
+- **Mensagens em JSON**: O formato JSON foi escolhido pela sua simplicidade e compatibilidade universal para serialização de dados.
+
+## Explicação Passo a Passo do Algoritmo
+
+### Fase 1: Preparação
+1. O **Proposer** escolhe um número de proposta único (geralmente crescente) e envia uma mensagem de `prepare` para um subconjunto de **Acceptors**.
+2. Cada **Acceptor** verifica se o número da proposta é maior do que qualquer proposta anterior que ele tenha aceitado. Se for, o **Acceptor** envia uma `promise` ao **Proposer**, prometendo não aceitar propostas menores.
+
+### Fase 2: Proposta
+1. Após receber promessas de uma maioria (quórum) de **Acceptors**, o **Proposer** seleciona o valor da maior proposta aceita até então ou escolhe um novo valor se nenhuma proposta foi aceita.
+2. O **Proposer** envia uma mensagem de `accept` para os **Acceptors**.
+3. Se um **Acceptor** receber uma proposta válida (isto é, que seja maior do que qualquer outra que ele já tenha aceitado), ele aceita a proposta e envia uma confirmação ao **Proposer**.
+
+### Fase 3: Decisão e Aprendizado
+1. Quando uma maioria de **Acceptors** aceita a proposta, o valor é considerado aceito.
+2. O **Learner** (que pode ser qualquer nó ou processo) é notificado do valor aceito e registra esse valor como o consenso final.
+
 ## Arquitetura
 
-Cada nó mantém uma lista de vizinhos, com seus respectivos IPs e portas, para enviar e receber mensagens. A comunicação é feita em JSON, e cada mensagem tem um tipo específico como 'prepare', 'promise', 'accept' e 'accepted'.
-
-### Fluxo de Mensagens
-
-1. O **Proposer** envia uma mensagem de `prepare` aos **Acceptors**.
-2. Os **Acceptors** respondem com uma mensagem de `promise`, contendo a proposta mais recente aceita (se houver).
-3. O **Proposer** então envia uma mensagem de `accept` com o valor da proposta.
-4. Finalmente, os **Acceptors** enviam uma mensagem de `accepted` para confirmar o valor.
+Cada nó mantém uma lista de vizinhos (outros nós participantes) com seus respectivos IPs e portas, e envia mensagens usando o formato JSON. As mensagens podem ser dos seguintes tipos:
+- **prepare**: Proposta inicial de um Proposer.
+- **promise**: Confirmação de um Acceptor de que ele não aceitará propostas menores.
+- **accept**: Pedido para aceitar um valor proposto.
+- **accepted**: Confirmação de que um valor foi aceito pela maioria.
 
 ### Diagrama UML
 

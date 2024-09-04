@@ -10,30 +10,35 @@ class Node(Proposer, Acceptor, Learner):
     """
     Implements a paxos node with a socket interface
     """
-    def __init__(self, uid, port, neighbors, quorum_size=2):
-        self.proposer_uid = uid
+    def __init__(self, uid, port, neighbors, quorum_size, omission_limit = float('inf')):
+        self.uid = uid
         self.port = port
         self.neighbors = neighbors  # A map of UID to (IP, port)
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(("localhost", port))
         self.messenger = self
         self.quorum_size = quorum_size  
+        self.omission_limit = omission_limit
+        self.message_counter = 0
+        self.accepted_value = None
         threading.Thread(target=self.receive_messages).start()
 
     def send_message(self, target_uid, message_type, data):
-        message = {
-            "from_uid": self.proposer_uid,
-            "type": message_type,
-            "data": data
-        }
-        target_ip, target_port = self.neighbors[target_uid]
-        self.sock.sendto(json.dumps(message).encode(), (target_ip, target_port))
+        if self.message_counter < self.omission_limit:
+            message = {
+                "from_uid": self.uid,
+                "type": message_type,
+                "data": data
+            }
+            target_ip, target_port = self.neighbors[target_uid]
+            self.sock.sendto(json.dumps(message).encode(), (target_ip, target_port))
+            self.message_counter+=1
 
     def receive_messages(self):
-        while True:
+        while self.message_counter < self.omission_limit:
             message, _ = self.sock.recvfrom(1024)
             message = json.loads(message.decode())
-            print(f"{self.proposer_uid} recieved message {message}")
+            print(f"{self.uid} recieved message {message}")
             self.handle_message(message)
 
     def handle_message(self, message):
@@ -64,12 +69,11 @@ class Node(Proposer, Acceptor, Learner):
             "prev_accepted_value": accepted_value
         })
 
-    def send_accept(self, proposal_id, proposal_value):
-        for uid in self.neighbors:
-            self.send_message(uid, 'accept', {
-                "proposal_id": proposal_id._asdict(),
-                "value": proposal_value
-            })
+    def send_accept(self, proposal_id, proposal_value, from_uid):
+        self.send_message(from_uid, 'accept', {
+            "proposal_id": proposal_id._asdict(),
+            "value": proposal_value
+        })
 
     def send_accepted(self, proposal_id, accepted_value):
         for uid in self.neighbors:
@@ -79,4 +83,4 @@ class Node(Proposer, Acceptor, Learner):
             })
 
     def on_resolution(self, proposal_id, value):
-        print(f"Node {self.proposer_uid} learned value: {value}")
+        print(f"Node {self.uid} consensus value: {value}")

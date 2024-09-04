@@ -1,9 +1,6 @@
-class Acceptor(object):
-
-    # messenger = None
+class Acceptor:
     promised_id = None
     accepted_id = None
-    accepted_value = None
 
     def recv_prepare(self, from_uid, proposal_id):
         """
